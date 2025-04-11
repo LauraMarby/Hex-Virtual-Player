@@ -124,3 +124,17 @@ class MarBys_Player(Player):
             if 0 <= nrow < board.size and 0 <= ncol < board.size:
                 result.append((nrow, ncol))
         return result
+    
+    def neighbor_evaluation(self, board, r, c, player_id, opponent_id):
+        friendly = 0
+        enemy = 0
+        score = 0
+        for nr, nc in self.getNeighbors(board, r, c):
+            neighbor = board.board[nr][nc]
+            if neighbor == player_id:
+                friendly += 1
+            elif neighbor == opponent_id:
+                enemy += 1
+        score += friendly * 2
+        score -= enemy * 2
+        return score
