@@ -1,9 +1,7 @@
-from collections import deque
 import time
 import heapq
 from hexboard import HexBoard
 from base_player import Player
-from functools import wraps
 
 class MarBys_Player(Player):
     """Jugador siguiendo algoritmo minimax con poda alpha-beta"""
