@@ -5,9 +5,8 @@ from base_player import Player
 
 class MarBys_Player(Player):
     """Jugador siguiendo algoritmo minimax con poda alpha-beta"""
-    def __init__(self, player_id, depth=3, time_limit=10.0):
+    def __init__(self, player_id, time_limit=10.0):
         super().__init__(player_id)
-        self.depth = depth
         self.heuristic = self.distance_heuristic
         self.time_limit = time_limit
 
@@ -20,8 +19,8 @@ class MarBys_Player(Player):
         dynamic_depth = self.dynamic_depth(board)
         _,best_move = self.minimax(board, dynamic_depth, True, float("-inf"), float("inf"))
 
-        duration = time.time() - start_time
-        print(f"Tiempo total de jugada: {duration:.3f}s")
+        # duration = time.time() - start_time
+        # print(f"Tiempo total de jugada: {duration:.3f}s")
         #print(f"Movimiento realizado: {best_move[0]:.3f}, {best_move[1]:.3f}")
         return best_move
     
