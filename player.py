@@ -158,19 +158,19 @@ class MarBys_Player(Player):
 
         #determinar quién esta más cerca de conectar
         if my_distance>opp_distance:
-            board_score = board_score - (200 * (my_distance - opp_distance))
+            board_score -= (200 * (my_distance - opp_distance))
         elif my_distance<opp_distance:
-            board_score = board_score + (200 * (opp_distance - my_distance))
+            board_score += (200 * (opp_distance - my_distance))
 
         #bonificacion y penalización por acercarse a la meta
         if my_distance<4:
-            board_score = board_score + (500 * 1/(1+my_distance))
+            board_score += (500 * 1/(1+my_distance))
         if opp_distance<4:
-            board_score = board_score - (500 * 1/(1+my_distance))
+            board_score -= (500 * 1/(1+my_distance))
         if my_distance<2:
-            board_score = board_score + 1000
+            board_score += 1000
         if opp_distance<2:
-            board_score = board_score - 1000
+            board_score -= 1000
 
         #heurstica basada en contar conexiones
         count_connected = self.default_heuristic(board, player_id)
@@ -187,9 +187,9 @@ class MarBys_Player(Player):
                 if pos == otherPlayer_id:
                     opp_positions.append((r, c))
         for (r, c) in my_positions:
-            board_score = board_score + self.neighbor_evaluation(board, r, c, player_id, otherPlayer_id)
+            board_score += self.neighbor_evaluation(board, r, c, player_id, otherPlayer_id)
         for (r, c) in opp_positions:
-            board_score = board_score - self.neighbor_evaluation(board, r, c, otherPlayer_id, player_id)
+            board_score -= self.neighbor_evaluation(board, r, c, otherPlayer_id, player_id)
 
         # puntos por bloqueo al oponente
         for row in range(board.size):
