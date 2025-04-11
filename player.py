@@ -1,16 +1,15 @@
-from collections import deque
 import time
+import heapq
 from hexboard import HexBoard
 from base_player import Player
 
-TIME_LIMIT = 3.0
-
 class MarBys_Player(Player):
     """Jugador siguiendo algoritmo minimax con poda alpha-beta"""
-    def __init__(self, player_id, depth=2):
+    def __init__(self, player_id, depth=3, time_limit=10.0):
         super().__init__(player_id)
         self.depth = depth
         self.heuristic = self.default_heuristic
+        self.time_limit = time_limit
 
     def play(self, board: HexBoard) -> tuple:
         """Elige el mejor movimiento entre los disponibles"""
@@ -18,24 +17,44 @@ class MarBys_Player(Player):
         start_time = time.time()
         self.start_time = start_time
 
-        _,best_move = self.minimax(board, self.depth, True, float("-inf"), float("inf"))
+        dynamic_depth = self.dynamic_depth(board)
+        _,best_move = self.minimax(board, dynamic_depth, True, float("-inf"), float("inf"))
 
         duration = time.time() - start_time
         print(f"Tiempo total de jugada: {duration:.3f}s")
+        #print(f"Movimiento realizado: {best_move[0]:.3f}, {best_move[1]:.3f}")
         return best_move
+    
+    def dynamic_depth(self, board: HexBoard):
+        """Le da un valor a la profundidad limite en dependencia de cuantas celdas del tablero están usadas"""
+        possible_moves = board.get_possible_moves()
+        percent = (len(possible_moves) / (board.size * board.size)) * 100
+        depth = 9
 
-    def minimax(self, board: HexBoard, depht, maximizing, alpha, beta) -> tuple:
+        if percent <= 25:
+            depth = 9
+        elif percent <= 50:
+            depth = 7
+        elif percent <= 75:
+            depth = 5
+        else:
+            depth = 3
+        
+        return depth
+    
+    def minimax(self, board: HexBoard, depth, maximizing, alpha, beta) -> tuple:
         """Algoritmo minimax con poda alpha-beta"""
         otherPlayer_id = 1 if self.player_id == 2 else 2
 
-        if time.time() - self.start_time > TIME_LIMIT:
+        if time.time() - self.start_time > self.time_limit-0.5:
             return self.heuristic(board, self.player_id), None
-        if depht == 0:
-            return self.heuristic(board, self.player_id), None
+        
         if board.check_connection(self.player_id):
             return float("inf"), None
-        if board.check_connection(otherPlayer_id):
+        elif board.check_connection(otherPlayer_id):
             return float("-inf"), None
+        elif (depth == 0) or not board.get_possible_moves():
+            return self.heuristic(board, self.player_id), None
         
         best_move = None
         board_copy = board.clone()
@@ -44,8 +63,7 @@ class MarBys_Player(Player):
 
         for move in possible_moves:
             board_copy.place_piece(*move, self.player_id) if maximizing else board_copy.place_piece(*move, otherPlayer_id)
-            maximizing2 = False if maximizing else True
-            score,_ = self.minimax(board_copy, depht-1, maximizing2, float("-inf"), float("inf"))
+            score,_ = self.minimax(board_copy, depth-1, not maximizing, alpha, beta)
             board_copy.board[move[0]][move[1]] = 0
 
             if maximizing: 
@@ -58,11 +76,12 @@ class MarBys_Player(Player):
                     best_score = score
                     best_move = move
                 beta = min(beta, score)
-            if alpha >= beta: break
+            if alpha >= beta:
+                break
 
-        if best_move is None and possible_moves:
-            return possible_moves[0] #implementar estrategia para que el jugador salga del paso
-
+        if (best_move is None or best_score is float("-inf")) and possible_moves:
+            best_move = possible_moves[0] #implementar modo antiganador
+            
         return best_score,best_move
 
     def default_heuristic(self, board:HexBoard, player_id: int) -> float:
@@ -72,7 +91,7 @@ class MarBys_Player(Player):
         count1 = self.countConnected(board, player_id)
         count2 = self.countConnected(board, otherPlayer_id)
 
-        return (count2 - count1)/max(count1, count2) if max(count1, count2) != 0 else 0
+        return (count1 - count2)/max(count1, count2) if max(count1, count2) != 0 else 0
     
     def countConnected(self, board: HexBoard, player_id: int):
         """Devuelve cuántas piezas están conectadas"""
@@ -102,7 +121,6 @@ class MarBys_Player(Player):
         for neighbor in directions:
             nrow = row + neighbor[0]
             ncol = col + neighbor[1]
-            if (nrow >= 0 | nrow < board.size) & (ncol >= 0 | ncol < board.size):
+            if 0 <= nrow < board.size and 0 <= ncol < board.size:
                 result.append((nrow, ncol))
         return result
-    
