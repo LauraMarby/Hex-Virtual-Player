@@ -138,3 +138,55 @@ class MarBys_Player(Player):
         score += friendly * 2
         score -= enemy * 2
         return score
+
+    def astar_path_cost(self, board: HexBoard, player_id):  #dvuelve el costo mínimo de unir dos lados
+        board_size = board.size   #tamaño del tablero
+        visited_nodes = set()     #nodos visitados
+        heap = []                 #espacio de búsqueda
+        dict_of_costs = {}        #csto actual mínimo de los nodos
+
+        def manhattan_dist(row, col): # distancia de manhattan como heurística de A*
+            return board_size - 1 - (col if player_id == 1 else row)
+
+        def is_goal(row, col): #verifica si llegamos al lado opuesto
+            return (col == board_size - 1) if player_id == 1 else (row == board_size - 1)
+
+        # inicialmente se guardan las posiciones de unos de los lados a conectar
+        for i in range(board_size):
+            r, c = (i, 0) if player_id == 1 else (0, i)
+            cell = board.board[r][c]
+            if cell == player_id:
+                cost = 0
+            elif cell == 0:
+                cost = 1
+            else:
+                continue
+            heapq.heappush(heap, (cost + manhattan_dist(r, c), cost, r, c))  #se mete el costo+heuristic primero pq por ese término es q se ordena el heap
+            dict_of_costs[(r, c)] = cost
+
+        #analizando espacio de búsqueda para llegar al otro lado
+        while heap:
+            _, cost, r, c = heapq.heappop(heap) #dscartamos g+h (ya no es necesario)
+            if (r, c) in visited_nodes:
+                continue
+            visited_nodes.add((r, c))
+
+            if is_goal(r, c):
+                return cost
+
+            for nr, nc in self.getNeighbors(board, r, c):
+                if (nr, nc) in visited_nodes:
+                    continue
+                cell = board.board[nr][nc]
+                if cell == player_id:
+                    new_cost = cost
+                elif cell == 0:
+                    new_cost = cost + 1
+                else:
+                    #new_cost = cost + 3
+                    continue
+                if (nr, nc) not in dict_of_costs or new_cost < dict_of_costs[(nr, nc)]:
+                    dict_of_costs[(nr, nc)] = new_cost
+                    heapq.heappush(heap, (new_cost + manhattan_dist(nr, nc), new_cost, nr, nc))
+
+        return float("inf")  #no hay camino para la victoria
