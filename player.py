@@ -190,3 +190,71 @@ class MarBys_Player(Player):
                     heapq.heappush(heap, (new_cost + manhattan_dist(nr, nc), new_cost, nr, nc))
 
         return float("inf")  #no hay camino para la victoria
+    
+    def distance_heuristic(self, board:HexBoard, player_id: int):
+        """Heurística basada en la distancia"""
+        otherPlayer_id = 1 if player_id == 2 else 2
+
+        board_score = 0
+
+        #heuristica basada en A* con costo mínimo
+        my_distance = self.astar_path_cost(board, player_id)
+        opp_distance = self.astar_path_cost(board, otherPlayer_id)
+
+        #determinar quién esta más cerca de conectar
+        if my_distance>opp_distance:
+            board_score = board_score - (200 * (my_distance - opp_distance))
+        elif my_distance<opp_distance:
+            board_score = board_score + (200 * (opp_distance - my_distance))
+
+        #bonificacion y penalización por acercarse a la meta
+        if my_distance<4:
+            board_score = board_score + (500 * 1/(1+my_distance))
+        if opp_distance<4:
+            board_score = board_score - (500 * 1/(1+my_distance))
+        if my_distance<2:
+            board_score = board_score + 1000
+        if opp_distance<2:
+            board_score = board_score - 1000
+
+        #heurstica basada en contar conexiones
+        count_connected = self.default_heuristic(board, player_id)
+        board_score = board_score + (count_connected * 10)
+
+        #valuación de vecindad
+        my_positions = []
+        opp_positions = []
+        for r in range(board.size):
+            for c in range(board.size):
+                pos = board.board[r][c]
+                if pos == player_id:
+                    my_positions.append((r, c))
+                if pos == otherPlayer_id:
+                    opp_positions.append((r, c))
+        for (r, c) in my_positions:
+            board_score = board_score + self.neighbor_evaluation(board, r, c, player_id, otherPlayer_id)
+        for (r, c) in opp_positions:
+            board_score = board_score - self.neighbor_evaluation(board, r, c, otherPlayer_id, player_id)
+
+        # bloqueo estrategico del oponente
+        for row in range(board.size):
+            for col in range(board.size):
+                cell = board.board[row][col]
+                if cell == player_id:
+
+                    if otherPlayer_id == 1:
+                        importance = col/board.size
+                        #buscamos si esta ficha está rodeada por fichas nemigas horizontalmente
+                        if col > 0 and col < board.size - 1:
+                            if (board.board[row][col - 1] == otherPlayer_id and
+                                board.board[row][col + 1] == otherPlayer_id):
+                                board_score += 30 + (importance*10) # Ajustable según la importancia del bloqueo
+                    else:
+                        importance = row/board.size
+                        #buscamos si está rodeada verticalmente
+                        if row > 0 and row < board.size - 1:
+                            if (board.board[row - 1][col] == otherPlayer_id and
+                                board.board[row + 1][col] == otherPlayer_id):
+                                board_score += 30 + (importance*10)
+
+        return board_score
